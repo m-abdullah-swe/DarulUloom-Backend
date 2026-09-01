@@ -115,7 +115,17 @@ async function stats() {
         _count: { select: { teacherDepartments: true } }
       }
     }),
-    prisma.teacher.count({ where: { joiningDate: { gte: monthStart, lt: nextMonthStart } } })
+    prisma.teacher.count({
+      where: {
+        OR: [
+          { joiningDate: { gte: monthStart, lt: nextMonthStart } },
+          {
+            joiningDate: null,
+            createdAt: { gte: monthStart, lt: nextMonthStart }
+          }
+        ]
+      }
+    })
   ]);
 
   return {

@@ -106,4 +106,36 @@ const deleteStudentSchema = z.object({
   params: z.object({ id: z.string().uuid() })
 });
 
-module.exports = { createStudentSchema, updateStudentSchema, deleteStudentSchema };
+const assignClassSchema = z.object({
+  body: z.object({
+    classId: z.string().uuid().nullable()
+  }),
+  query: z.object({}),
+  params: z.object({ id: z.string().uuid() })
+});
+
+const updateAdmissionPlacementSchema = z.object({
+  body: z
+    .object({
+      departmentId: z.string().uuid().optional(),
+      academicYearId: z.string().uuid().optional(),
+      classId: z.string().uuid().nullable().optional()
+    })
+    .refine(
+      (data) =>
+        data.departmentId !== undefined ||
+        data.academicYearId !== undefined ||
+        data.classId !== undefined,
+      { message: "At least one placement field is required" }
+    ),
+  query: z.object({}),
+  params: z.object({ id: z.string().uuid() })
+});
+
+module.exports = {
+  createStudentSchema,
+  updateStudentSchema,
+  deleteStudentSchema,
+  assignClassSchema,
+  updateAdmissionPlacementSchema
+};

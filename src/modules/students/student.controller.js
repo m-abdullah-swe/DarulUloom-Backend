@@ -23,3 +23,17 @@ exports.update = asyncHandler(async (req, res) => {
 exports.remove = asyncHandler(async (req, res) => {
   res.json({ success: true, data: await service.remove(req.params.id) });
 });
+
+exports.assignClass = asyncHandler(async (req, res) => {
+  res.json({
+    success: true,
+    data: await service.assignClass(req.params.id, req.validated.body)
+  });
+});
+
+exports.updateAdmissionPlacement = asyncHandler(async (req, res) => {
+  res.json({
+    success: true,
+    data: await service.updateAdmissionPlacement(req.params.id, req.validated.body)
+  });
+});

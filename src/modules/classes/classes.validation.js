@@ -9,4 +9,48 @@ const listClassesSchema = z.object({
   params: z.object({})
 });
 
-module.exports = { listClassesSchema };
+const createClassSchema = z.object({
+  body: z.object({
+    id: z.string().uuid().optional(),
+    departmentId: z.string().uuid(),
+    academicYearId: z.string().uuid(),
+    nameEn: z.string().trim().min(1),
+    nameUr: z.string().trim().optional().nullable(),
+    code: z.string().trim().optional().nullable(),
+    capacity: z.number().int().nonnegative().optional().nullable(),
+    classType: z.string().trim().optional().nullable(),
+    isActive: z.boolean().optional()
+  }),
+  query: z.object({}),
+  params: z.object({})
+});
+
+const updateClassSchema = z.object({
+  body: z.object({
+    nameEn: z.string().trim().min(1).optional(),
+    nameUr: z.string().trim().optional().nullable(),
+    code: z.string().trim().optional().nullable(),
+    capacity: z.number().int().nonnegative().optional().nullable(),
+    classType: z.string().trim().optional().nullable(),
+    isActive: z.boolean().optional()
+  }),
+  query: z.object({}),
+  params: z.object({
+    id: z.string().uuid()
+  })
+});
+
+const deleteClassSchema = z.object({
+  body: z.object({}),
+  query: z.object({}),
+  params: z.object({
+    id: z.string().uuid()
+  })
+});
+
+module.exports = {
+  listClassesSchema,
+  createClassSchema,
+  updateClassSchema,
+  deleteClassSchema
+};

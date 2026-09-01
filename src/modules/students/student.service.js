@@ -64,17 +64,41 @@ async function create(data) {
 async function list(query) {
   const { page, limit, skip } = getPagination(query);
   const search = query.search?.trim();
+  const status = query.status?.trim();
+  const departmentId = query.departmentId?.trim();
+  const classId = query.classId?.trim();
+  const academicYearId = query.academicYearId?.trim();
+  const admissionStatus = query.admissionStatus?.trim();
+  const unassignedClass = query.unassignedClass === "true";
 
-  const where = search ? {
-    OR: [
+  const where = {};
+
+  if (search) {
+    where.OR = [
       { registrationNumber: { contains: search, mode: "insensitive" } },
       { fullNameEn: { contains: search, mode: "insensitive" } },
       { fullNameUr: { contains: search } },
       { fatherNameEn: { contains: search, mode: "insensitive" } },
       { fatherNameUr: { contains: search } },
       { admissions: { some: { admissionNumber: { contains: search, mode: "insensitive" } } } }
-    ]
-  } : {};
+    ];
+  }
+
+  if (status) {
+    where.status = status;
+  }
+
+  if (departmentId || classId || academicYearId || admissionStatus || unassignedClass) {
+    where.admissions = {
+      some: {
+        ...(admissionStatus ? { status: admissionStatus } : { status: "ACTIVE" }),
+        ...(departmentId ? { departmentId } : {}),
+        ...(classId ? { classId } : {}),
+        ...(academicYearId ? { academicYearId } : {}),
+        ...(unassignedClass ? { classId: null } : {})
+      }
+    };
+  }
 
   const [data, total] = await Promise.all([
     prisma.student.findMany({
@@ -203,4 +227,119 @@ async function remove(id) {
   return { id: existing.id };
 }
 
-module.exports = { create, list, getById, update, remove };
+async function syncActiveEnrollment(tx, student, admission, classId) {
+  const activeEnrollment = student.enrollments.find((entry) => entry.status === "ACTIVE");
+
+  if (activeEnrollment) {
+    if (classId) {
+      await tx.studentEnrollment.update({
+        where: { id: activeEnrollment.id },
+        data: {
+          classId,
+          departmentId: admission.departmentId,
+          academicYearId: admission.academicYearId
+        }
+      });
+    } else {
+      await tx.studentEnrollment.update({
+        where: { id: activeEnrollment.id },
+        data: { status: "TRANSFERRED", endDate: new Date() }
+      });
+    }
+    return;
+  }
+
+  if (classId) {
+    await tx.studentEnrollment.create({
+      data: {
+        studentId: student.id,
+        classId,
+        departmentId: admission.departmentId,
+        academicYearId: admission.academicYearId,
+        status: "ACTIVE"
+      }
+    });
+  }
+}
+
+async function updateAdmissionPlacement(studentId, data) {
+  const student = await getById(studentId);
+  const activeAdmission =
+    student.admissions.find((entry) => entry.status === "ACTIVE") ?? student.admissions[0];
+
+  if (!activeAdmission) {
+    throw new ApiError(400, "Student has no admission record");
+  }
+
+  const departmentId = data.departmentId ?? activeAdmission.departmentId;
+  const academicYearId = data.academicYearId ?? activeAdmission.academicYearId;
+  const classId = data.classId !== undefined ? data.classId : activeAdmission.classId;
+
+  const [department, academicYear] = await Promise.all([
+    prisma.department.findUnique({ where: { id: departmentId } }),
+    prisma.academicYear.findUnique({ where: { id: academicYearId } })
+  ]);
+
+  if (!department) throw new ApiError(404, "Department not found");
+  if (!academicYear) throw new ApiError(404, "Academic year not found");
+
+  if (classId) {
+    const targetClass = await prisma.class.findUnique({ where: { id: classId } });
+    if (!targetClass) throw new ApiError(404, "Class not found");
+    if (targetClass.departmentId !== departmentId) {
+      throw new ApiError(400, "Class does not belong to the selected department");
+    }
+    if (targetClass.academicYearId !== academicYearId) {
+      throw new ApiError(400, "Class does not belong to the selected academic year");
+    }
+  }
+
+  await prisma.$transaction(async (tx) => {
+    const updatedAdmission = await tx.studentAdmission.update({
+      where: { id: activeAdmission.id },
+      data: {
+        departmentId,
+        academicYearId,
+        classId: classId ?? null
+      }
+    });
+
+    student.admissions = student.admissions.map((entry) =>
+      entry.id === updatedAdmission.id ? { ...entry, ...updatedAdmission } : entry
+    );
+
+    await syncActiveEnrollment(tx, student, updatedAdmission, classId ?? null);
+  });
+
+  return getById(studentId);
+}
+
+async function assignClass(studentId, { classId }) {
+  const student = await getById(studentId);
+  const activeAdmission =
+    student.admissions.find((entry) => entry.status === "ACTIVE") ?? student.admissions[0];
+
+  if (!activeAdmission) {
+    throw new ApiError(400, "Student has no admission record");
+  }
+
+  if (classId) {
+    const targetClass = await prisma.class.findUnique({ where: { id: classId } });
+    if (!targetClass) {
+      throw new ApiError(404, "Class not found");
+    }
+  }
+
+  await prisma.$transaction(async (tx) => {
+    const updatedAdmission = await tx.studentAdmission.update({
+      where: { id: activeAdmission.id },
+      data: { classId: classId ?? null }
+    });
+
+    await syncActiveEnrollment(tx, student, updatedAdmission, classId ?? null);
+  });
+
+  return getById(studentId);
+}
+
+module.exports = { create, list, getById, update, remove, assignClass, updateAdmissionPlacement };
