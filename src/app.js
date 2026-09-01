@@ -16,6 +16,7 @@ const academicYearRoutes = require("./modules/academic-years/academicYear.routes
 const teacherRoutes = require("./modules/teachers/teacher.routes");
 const visitRoutes = require("./modules/visitors/visit.routes");
 const auditLogRoutes = require("./modules/audit-logs/auditLog.routes");
+const financeRoutes = require("./modules/finance/finance.routes");
 
 const app = express();
 
@@ -45,6 +46,7 @@ app.use("/api/academic-years", academicYearRoutes);
 app.use("/api/teachers", teacherRoutes);
 app.use("/api/visitors", visitRoutes);
 app.use("/api/audit-logs", auditLogRoutes);
+app.use("/api/finance", financeRoutes);
 
 const placeholderModules = [
   "attendance", "prizes",

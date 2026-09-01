@@ -1,5 +1,6 @@
 const { PrismaClient, UserRole } = require("@prisma/client");
 const bcrypt = require("bcryptjs");
+const { seedFinanceDemoData } = require("./seed-finance");
 
 const prisma = new PrismaClient();
 
@@ -63,6 +64,8 @@ async function main() {
       create: category
     });
   }
+
+  await seedFinanceDemoData(prisma);
 
   console.log("Seed completed successfully");
 }

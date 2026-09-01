@@ -9,6 +9,7 @@
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "prisma:seed": "node prisma/seed.js",
+    "prisma:seed:finance": "node prisma/run-seed-finance.js",
     "db:cli": "node scripts/db-cli.js",
     "seed:demo": "node scripts/seed-demo-data.mjs"
   },

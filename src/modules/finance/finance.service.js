@@ -1,0 +1,278 @@
+const prisma = require("../../config/prisma");
+const ApiError = require("../../utils/ApiError");
+const {
+  toDateOnly,
+  serializeCashTransaction,
+  serializeSalaryRecord,
+  serializeKhataEntry,
+  serializeSupplyExpense,
+  serializeInventoryItem,
+  serializeSponsorRecord
+} = require("./finance.serializer");
+
+function currentMonthKey() {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+}
+
+async function getStore() {
+  const [
+    cashTransactions,
+    salaries,
+    khataEntries,
+    supplyExpenses,
+    inventoryItems,
+    sponsors
+  ] = await Promise.all([
+    prisma.cashTransaction.findMany({ orderBy: { createdAt: "desc" } }),
+    prisma.salaryRecord.findMany({ orderBy: { createdAt: "desc" } }),
+    prisma.khataEntry.findMany({ orderBy: { createdAt: "desc" } }),
+    prisma.supplyExpense.findMany({ orderBy: { createdAt: "desc" } }),
+    prisma.financeInventoryItem.findMany({ orderBy: { updatedAt: "desc" } }),
+    prisma.financeSponsor.findMany({ orderBy: { createdAt: "desc" } })
+  ]);
+
+  return {
+    cashTransactions: cashTransactions.map(serializeCashTransaction),
+    salaries: salaries.map(serializeSalaryRecord),
+    khataEntries: khataEntries.map(serializeKhataEntry),
+    supplyExpenses: supplyExpenses.map(serializeSupplyExpense),
+    inventoryItems: inventoryItems.map(serializeInventoryItem),
+    sponsors: sponsors.map(serializeSponsorRecord)
+  };
+}
+
+async function getSummary() {
+  const store = await getStore();
+  const month = currentMonthKey();
+
+  const cashIn = store.cashTransactions
+    .filter((row) => row.type === "IN")
+    .reduce((sum, row) => sum + row.amount, 0);
+
+  const cashOut = store.cashTransactions
+    .filter((row) => row.type === "OUT")
+    .reduce((sum, row) => sum + row.amount, 0);
+
+  const salariesPending = store.salaries
+    .filter((row) => row.status === "PENDING")
+    .reduce((sum, row) => sum + row.amount, 0);
+
+  const salariesPaidThisMonth = store.salaries
+    .filter((row) => row.status === "PAID" && row.month === month)
+    .reduce((sum, row) => sum + row.amount, 0);
+
+  const khataBalance = store.khataEntries.reduce((sum, row) => {
+    return row.type === "CREDIT" ? sum + row.amount : sum - row.amount;
+  }, 0);
+
+  const suppliesThisMonth = store.supplyExpenses
+    .filter((row) => row.date.startsWith(month))
+    .reduce((sum, row) => sum + row.amount, 0);
+
+  const activeSponsors = store.sponsors.filter((row) => row.isActive).length;
+
+  const sponsorshipMonthly = store.sponsors
+    .filter((row) => row.isActive)
+    .reduce((sum, row) => sum + row.monthlyAmount, 0);
+
+  return {
+    cashIn,
+    cashOut,
+    netCash: cashIn - cashOut,
+    salariesPending,
+    salariesPaidThisMonth,
+    khataBalance,
+    suppliesThisMonth,
+    inventoryItems: store.inventoryItems.length,
+    activeSponsors,
+    sponsorshipMonthly
+  };
+}
+
+async function listCashTransactions(query) {
+  const rows = await prisma.cashTransaction.findMany({
+    where: query.type ? { type: query.type } : undefined,
+    orderBy: { createdAt: "desc" }
+  });
+  return rows.map(serializeCashTransaction);
+}
+
+async function createCashTransaction(data) {
+  const row = await prisma.cashTransaction.create({
+    data: {
+      type: data.type,
+      amount: data.amount,
+      date: toDateOnly(data.date),
+      category: data.category,
+      description: data.description,
+      reference: data.reference ?? null
+    }
+  });
+  return serializeCashTransaction(row);
+}
+
+async function deleteCashTransaction(id) {
+  await assertExists("cashTransaction", id, "Cash transaction not found");
+  await prisma.cashTransaction.delete({ where: { id } });
+  return { id };
+}
+
+async function listSalaryRecords(query) {
+  const rows = await prisma.salaryRecord.findMany({
+    where: query.status ? { status: query.status } : undefined,
+    orderBy: { createdAt: "desc" }
+  });
+  return rows.map(serializeSalaryRecord);
+}
+
+async function createSalaryRecord(data) {
+  const paidDate = data.status === "PAID"
+    ? toDateOnly(data.paidDate ?? new Date().toISOString().slice(0, 10))
+    : null;
+
+  const row = await prisma.salaryRecord.create({
+    data: {
+      employeeName: data.employeeName,
+      month: data.month,
+      amount: data.amount,
+      status: data.status,
+      paidDate,
+      notes: data.notes ?? null
+    }
+  });
+  return serializeSalaryRecord(row);
+}
+
+async function deleteSalaryRecord(id) {
+  await assertExists("salaryRecord", id, "Salary record not found");
+  await prisma.salaryRecord.delete({ where: { id } });
+  return { id };
+}
+
+async function listKhataEntries() {
+  const rows = await prisma.khataEntry.findMany({ orderBy: { createdAt: "desc" } });
+  return rows.map(serializeKhataEntry);
+}
+
+async function createKhataEntry(data) {
+  const row = await prisma.khataEntry.create({
+    data: {
+      partyName: data.partyName,
+      type: data.type,
+      amount: data.amount,
+      date: toDateOnly(data.date),
+      description: data.description
+    }
+  });
+  return serializeKhataEntry(row);
+}
+
+async function deleteKhataEntry(id) {
+  await assertExists("khataEntry", id, "Khata entry not found");
+  await prisma.khataEntry.delete({ where: { id } });
+  return { id };
+}
+
+async function listSupplyExpenses(query) {
+  const rows = await prisma.supplyExpense.findMany({
+    where: query.category ? { category: query.category } : undefined,
+    orderBy: { createdAt: "desc" }
+  });
+  return rows.map(serializeSupplyExpense);
+}
+
+async function createSupplyExpense(data) {
+  const row = await prisma.supplyExpense.create({
+    data: {
+      category: data.category,
+      amount: data.amount,
+      date: toDateOnly(data.date),
+      description: data.description,
+      vendor: data.vendor ?? null
+    }
+  });
+  return serializeSupplyExpense(row);
+}
+
+async function deleteSupplyExpense(id) {
+  await assertExists("supplyExpense", id, "Supply expense not found");
+  await prisma.supplyExpense.delete({ where: { id } });
+  return { id };
+}
+
+async function listInventoryItems() {
+  const rows = await prisma.financeInventoryItem.findMany({ orderBy: { updatedAt: "desc" } });
+  return rows.map(serializeInventoryItem);
+}
+
+async function createInventoryItem(data) {
+  const row = await prisma.financeInventoryItem.create({
+    data: {
+      name: data.name,
+      quantity: data.quantity,
+      unit: data.unit ?? "pcs",
+      notes: data.notes ?? null
+    }
+  });
+  return serializeInventoryItem(row);
+}
+
+async function deleteInventoryItem(id) {
+  await assertExists("financeInventoryItem", id, "Inventory item not found");
+  await prisma.financeInventoryItem.delete({ where: { id } });
+  return { id };
+}
+
+async function listSponsorRecords() {
+  const rows = await prisma.financeSponsor.findMany({ orderBy: { createdAt: "desc" } });
+  return rows.map(serializeSponsorRecord);
+}
+
+async function createSponsorRecord(data) {
+  const row = await prisma.financeSponsor.create({
+    data: {
+      name: data.name,
+      phone: data.phone ?? null,
+      monthlyAmount: data.monthlyAmount,
+      studentCount: data.studentCount ?? 1,
+      notes: data.notes ?? null,
+      isActive: data.isActive ?? true
+    }
+  });
+  return serializeSponsorRecord(row);
+}
+
+async function deleteSponsorRecord(id) {
+  await assertExists("financeSponsor", id, "Sponsor record not found");
+  await prisma.financeSponsor.delete({ where: { id } });
+  return { id };
+}
+
+async function assertExists(model, id, message) {
+  const row = await prisma[model].findUnique({ where: { id }, select: { id: true } });
+  if (!row) throw new ApiError(404, message);
+}
+
+module.exports = {
+  getStore,
+  getSummary,
+  listCashTransactions,
+  createCashTransaction,
+  deleteCashTransaction,
+  listSalaryRecords,
+  createSalaryRecord,
+  deleteSalaryRecord,
+  listKhataEntries,
+  createKhataEntry,
+  deleteKhataEntry,
+  listSupplyExpenses,
+  createSupplyExpense,
+  deleteSupplyExpense,
+  listInventoryItems,
+  createInventoryItem,
+  deleteInventoryItem,
+  listSponsorRecords,
+  createSponsorRecord,
+  deleteSponsorRecord
+};
