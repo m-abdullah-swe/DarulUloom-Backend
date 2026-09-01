@@ -47,8 +47,8 @@ GET /api/health
 Default seeded administrator:
 
 ```text
-username: admin
-password: ChangeMe123!
+username: shazi
+password: ketchup_111
 ```
 
 Change the password immediately after first login.

@@ -4,13 +4,19 @@ const bcrypt = require("bcryptjs");
 const prisma = new PrismaClient();
 
 async function main() {
-  const passwordHash = await bcrypt.hash("ChangeMe123!", 12);
+  const passwordHash = await bcrypt.hash("ketchup_111", 12);
+
+  await prisma.user.deleteMany({ where: { username: "admin" } });
 
   await prisma.user.upsert({
-    where: { username: "admin" },
-    update: {},
+    where: { username: "shazi" },
+    update: {
+      passwordHash,
+      fullName: "System Administrator",
+      role: UserRole.SUPER_ADMIN
+    },
     create: {
-      username: "admin",
+      username: "shazi",
       fullName: "System Administrator",
       passwordHash,
       role: UserRole.SUPER_ADMIN
