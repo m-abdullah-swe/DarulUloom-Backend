@@ -18,6 +18,10 @@ exports.createCash = asyncHandler(async (req, res) => {
   res.status(201).json({ success: true, data });
 });
 
+exports.updateCash = asyncHandler(async (req, res) => {
+  res.json({ success: true, data: await service.updateCashTransaction(req.params.id, req.validated.body) });
+});
+
 exports.deleteCash = asyncHandler(async (req, res) => {
   res.json({ success: true, data: await service.deleteCashTransaction(req.params.id) });
 });
@@ -29,6 +33,10 @@ exports.listSalaries = asyncHandler(async (req, res) => {
 exports.createSalary = asyncHandler(async (req, res) => {
   const data = await service.createSalaryRecord(req.validated.body);
   res.status(201).json({ success: true, data });
+});
+
+exports.updateSalary = asyncHandler(async (req, res) => {
+  res.json({ success: true, data: await service.updateSalaryRecord(req.params.id, req.validated.body) });
 });
 
 exports.deleteSalary = asyncHandler(async (req, res) => {
@@ -44,6 +52,10 @@ exports.createKhata = asyncHandler(async (req, res) => {
   res.status(201).json({ success: true, data });
 });
 
+exports.updateKhata = asyncHandler(async (req, res) => {
+  res.json({ success: true, data: await service.updateKhataEntry(req.params.id, req.validated.body) });
+});
+
 exports.deleteKhata = asyncHandler(async (req, res) => {
   res.json({ success: true, data: await service.deleteKhataEntry(req.params.id) });
 });
@@ -55,6 +67,10 @@ exports.listSupplies = asyncHandler(async (req, res) => {
 exports.createSupply = asyncHandler(async (req, res) => {
   const data = await service.createSupplyExpense(req.validated.body);
   res.status(201).json({ success: true, data });
+});
+
+exports.updateSupply = asyncHandler(async (req, res) => {
+  res.json({ success: true, data: await service.updateSupplyExpense(req.params.id, req.validated.body) });
 });
 
 exports.deleteSupply = asyncHandler(async (req, res) => {
@@ -70,6 +86,10 @@ exports.createInventory = asyncHandler(async (req, res) => {
   res.status(201).json({ success: true, data });
 });
 
+exports.updateInventory = asyncHandler(async (req, res) => {
+  res.json({ success: true, data: await service.updateInventoryItem(req.params.id, req.validated.body) });
+});
+
 exports.deleteInventory = asyncHandler(async (req, res) => {
   res.json({ success: true, data: await service.deleteInventoryItem(req.params.id) });
 });
@@ -81,6 +101,10 @@ exports.listSponsors = asyncHandler(async (req, res) => {
 exports.createSponsor = asyncHandler(async (req, res) => {
   const data = await service.createSponsorRecord(req.validated.body);
   res.status(201).json({ success: true, data });
+});
+
+exports.updateSponsor = asyncHandler(async (req, res) => {
+  res.json({ success: true, data: await service.updateSponsorRecord(req.params.id, req.validated.body) });
 });
 
 exports.deleteSponsor = asyncHandler(async (req, res) => {

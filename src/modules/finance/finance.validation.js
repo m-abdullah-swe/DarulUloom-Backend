@@ -136,18 +136,60 @@ const financeIdSchema = z.object({
   params: idParams
 });
 
+const updateCashSchema = z.object({
+  body: createCashSchema.shape.body,
+  query: z.object({}),
+  params: idParams
+});
+
+const updateSalarySchema = z.object({
+  body: createSalarySchema.shape.body,
+  query: z.object({}),
+  params: idParams
+});
+
+const updateKhataSchema = z.object({
+  body: createKhataSchema.shape.body,
+  query: z.object({}),
+  params: idParams
+});
+
+const updateSupplySchema = z.object({
+  body: createSupplySchema.shape.body,
+  query: z.object({}),
+  params: idParams
+});
+
+const updateInventorySchema = z.object({
+  body: createInventorySchema.shape.body,
+  query: z.object({}),
+  params: idParams
+});
+
+const updateSponsorSchema = z.object({
+  body: createSponsorSchema.shape.body,
+  query: z.object({}),
+  params: idParams
+});
+
 module.exports = {
   listCashSchema,
   createCashSchema,
+  updateCashSchema,
   listSalarySchema,
   createSalarySchema,
+  updateSalarySchema,
   listKhataSchema,
   createKhataSchema,
+  updateKhataSchema,
   listSupplySchema,
   createSupplySchema,
+  updateSupplySchema,
   listInventorySchema,
   createInventorySchema,
+  updateInventorySchema,
   listSponsorSchema,
   createSponsorSchema,
+  updateSponsorSchema,
   financeIdSchema
 };

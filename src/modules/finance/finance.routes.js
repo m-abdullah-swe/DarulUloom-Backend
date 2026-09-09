@@ -7,16 +7,22 @@ const audit = require("../../middleware/audit.middleware");
 const {
   listCashSchema,
   createCashSchema,
+  updateCashSchema,
   listSalarySchema,
   createSalarySchema,
+  updateSalarySchema,
   listKhataSchema,
   createKhataSchema,
+  updateKhataSchema,
   listSupplySchema,
   createSupplySchema,
+  updateSupplySchema,
   listInventorySchema,
   createInventorySchema,
+  updateInventorySchema,
   listSponsorSchema,
   createSponsorSchema,
+  updateSponsorSchema,
   financeIdSchema
 } = require("./finance.validation");
 
@@ -36,6 +42,13 @@ router.post(
   audit("CREATE", "CASH_TRANSACTION", (_, body) => body?.data?.id),
   controller.createCash
 );
+router.put(
+  "/cash-transactions/:id",
+  writeRoles,
+  validate(updateCashSchema),
+  audit("UPDATE", "CASH_TRANSACTION", (req) => req.params.id),
+  controller.updateCash
+);
 router.delete(
   "/cash-transactions/:id",
   deleteRoles,
@@ -51,6 +64,13 @@ router.post(
   validate(createSalarySchema),
   audit("CREATE", "SALARY_RECORD", (_, body) => body?.data?.id),
   controller.createSalary
+);
+router.put(
+  "/salaries/:id",
+  writeRoles,
+  validate(updateSalarySchema),
+  audit("UPDATE", "SALARY_RECORD", (req) => req.params.id),
+  controller.updateSalary
 );
 router.delete(
   "/salaries/:id",
@@ -68,6 +88,13 @@ router.post(
   audit("CREATE", "KHATA_ENTRY", (_, body) => body?.data?.id),
   controller.createKhata
 );
+router.put(
+  "/khata-entries/:id",
+  writeRoles,
+  validate(updateKhataSchema),
+  audit("UPDATE", "KHATA_ENTRY", (req) => req.params.id),
+  controller.updateKhata
+);
 router.delete(
   "/khata-entries/:id",
   deleteRoles,
@@ -83,6 +110,13 @@ router.post(
   validate(createSupplySchema),
   audit("CREATE", "SUPPLY_EXPENSE", (_, body) => body?.data?.id),
   controller.createSupply
+);
+router.put(
+  "/supply-expenses/:id",
+  writeRoles,
+  validate(updateSupplySchema),
+  audit("UPDATE", "SUPPLY_EXPENSE", (req) => req.params.id),
+  controller.updateSupply
 );
 router.delete(
   "/supply-expenses/:id",
@@ -100,6 +134,13 @@ router.post(
   audit("CREATE", "FINANCE_INVENTORY", (_, body) => body?.data?.id),
   controller.createInventory
 );
+router.put(
+  "/inventory-items/:id",
+  writeRoles,
+  validate(updateInventorySchema),
+  audit("UPDATE", "FINANCE_INVENTORY", (req) => req.params.id),
+  controller.updateInventory
+);
 router.delete(
   "/inventory-items/:id",
   deleteRoles,
@@ -115,6 +156,13 @@ router.post(
   validate(createSponsorSchema),
   audit("CREATE", "FINANCE_SPONSOR", (_, body) => body?.data?.id),
   controller.createSponsor
+);
+router.put(
+  "/sponsors/:id",
+  writeRoles,
+  validate(updateSponsorSchema),
+  audit("UPDATE", "FINANCE_SPONSOR", (req) => req.params.id),
+  controller.updateSponsor
 );
 router.delete(
   "/sponsors/:id",

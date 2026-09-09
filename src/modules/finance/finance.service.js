@@ -112,6 +112,22 @@ async function createCashTransaction(data) {
   return serializeCashTransaction(row);
 }
 
+async function updateCashTransaction(id, data) {
+  await assertExists("cashTransaction", id, "Cash transaction not found");
+  const row = await prisma.cashTransaction.update({
+    where: { id },
+    data: {
+      type: data.type,
+      amount: data.amount,
+      date: toDateOnly(data.date),
+      category: data.category,
+      description: data.description,
+      reference: data.reference ?? null
+    }
+  });
+  return serializeCashTransaction(row);
+}
+
 async function deleteCashTransaction(id) {
   await assertExists("cashTransaction", id, "Cash transaction not found");
   await prisma.cashTransaction.delete({ where: { id } });
@@ -144,6 +160,26 @@ async function createSalaryRecord(data) {
   return serializeSalaryRecord(row);
 }
 
+async function updateSalaryRecord(id, data) {
+  await assertExists("salaryRecord", id, "Salary record not found");
+  const paidDate = data.status === "PAID"
+    ? toDateOnly(data.paidDate ?? new Date().toISOString().slice(0, 10))
+    : null;
+
+  const row = await prisma.salaryRecord.update({
+    where: { id },
+    data: {
+      employeeName: data.employeeName,
+      month: data.month,
+      amount: data.amount,
+      status: data.status,
+      paidDate,
+      notes: data.notes ?? null
+    }
+  });
+  return serializeSalaryRecord(row);
+}
+
 async function deleteSalaryRecord(id) {
   await assertExists("salaryRecord", id, "Salary record not found");
   await prisma.salaryRecord.delete({ where: { id } });
@@ -157,6 +193,21 @@ async function listKhataEntries() {
 
 async function createKhataEntry(data) {
   const row = await prisma.khataEntry.create({
+    data: {
+      partyName: data.partyName,
+      type: data.type,
+      amount: data.amount,
+      date: toDateOnly(data.date),
+      description: data.description
+    }
+  });
+  return serializeKhataEntry(row);
+}
+
+async function updateKhataEntry(id, data) {
+  await assertExists("khataEntry", id, "Khata entry not found");
+  const row = await prisma.khataEntry.update({
+    where: { id },
     data: {
       partyName: data.partyName,
       type: data.type,
@@ -195,6 +246,21 @@ async function createSupplyExpense(data) {
   return serializeSupplyExpense(row);
 }
 
+async function updateSupplyExpense(id, data) {
+  await assertExists("supplyExpense", id, "Supply expense not found");
+  const row = await prisma.supplyExpense.update({
+    where: { id },
+    data: {
+      category: data.category,
+      amount: data.amount,
+      date: toDateOnly(data.date),
+      description: data.description,
+      vendor: data.vendor ?? null
+    }
+  });
+  return serializeSupplyExpense(row);
+}
+
 async function deleteSupplyExpense(id) {
   await assertExists("supplyExpense", id, "Supply expense not found");
   await prisma.supplyExpense.delete({ where: { id } });
@@ -208,6 +274,20 @@ async function listInventoryItems() {
 
 async function createInventoryItem(data) {
   const row = await prisma.financeInventoryItem.create({
+    data: {
+      name: data.name,
+      quantity: data.quantity,
+      unit: data.unit ?? "pcs",
+      notes: data.notes ?? null
+    }
+  });
+  return serializeInventoryItem(row);
+}
+
+async function updateInventoryItem(id, data) {
+  await assertExists("financeInventoryItem", id, "Inventory item not found");
+  const row = await prisma.financeInventoryItem.update({
+    where: { id },
     data: {
       name: data.name,
       quantity: data.quantity,
@@ -243,6 +323,22 @@ async function createSponsorRecord(data) {
   return serializeSponsorRecord(row);
 }
 
+async function updateSponsorRecord(id, data) {
+  await assertExists("financeSponsor", id, "Sponsor record not found");
+  const row = await prisma.financeSponsor.update({
+    where: { id },
+    data: {
+      name: data.name,
+      phone: data.phone ?? null,
+      monthlyAmount: data.monthlyAmount,
+      studentCount: data.studentCount ?? 1,
+      notes: data.notes ?? null,
+      isActive: data.isActive ?? true
+    }
+  });
+  return serializeSponsorRecord(row);
+}
+
 async function deleteSponsorRecord(id) {
   await assertExists("financeSponsor", id, "Sponsor record not found");
   await prisma.financeSponsor.delete({ where: { id } });
@@ -259,20 +355,26 @@ module.exports = {
   getSummary,
   listCashTransactions,
   createCashTransaction,
+  updateCashTransaction,
   deleteCashTransaction,
   listSalaryRecords,
   createSalaryRecord,
+  updateSalaryRecord,
   deleteSalaryRecord,
   listKhataEntries,
   createKhataEntry,
+  updateKhataEntry,
   deleteKhataEntry,
   listSupplyExpenses,
   createSupplyExpense,
+  updateSupplyExpense,
   deleteSupplyExpense,
   listInventoryItems,
   createInventoryItem,
+  updateInventoryItem,
   deleteInventoryItem,
   listSponsorRecords,
   createSponsorRecord,
+  updateSponsorRecord,
   deleteSponsorRecord
 };
