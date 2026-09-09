@@ -10,6 +10,7 @@
     "prisma:migrate": "prisma migrate dev",
     "prisma:seed": "node prisma/seed.js",
     "prisma:seed:finance": "node prisma/run-seed-finance.js",
+    "prisma:seed:finance:force": "node prisma/run-seed-finance.js --force",
     "db:cli": "node scripts/db-cli.js",
     "seed:demo": "node scripts/seed-demo-data.mjs"
   },
